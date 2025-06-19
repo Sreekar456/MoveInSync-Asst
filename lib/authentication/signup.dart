@@ -1,3 +1,4 @@
+import 'package:app/methods/common_methods.dart';
 import 'package:flutter/material.dart';
 import 'login.dart';
 class SignUp extends StatefulWidget {
@@ -12,7 +13,13 @@ class _SignupState extends State<SignUp> {
   TextEditingController userNameTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
-  @override
+  CommonMethods cMethods = CommonMethods();
+  checkIfNetworkAvailable() {
+   cMethods.checkConnectivity(context);
+   
+  }
+  
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
@@ -46,10 +53,10 @@ class _SignupState extends State<SignUp> {
 
                     const SizedBox(height: 22),
                     TextField(
-                      controller: userNameTextEditingController,
-                      keyboardType: TextInputType.text,
+                      controller: emailTextEditingController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
-                        labelText: "User Name",
+                        labelText: "Email",
                         labelStyle: TextStyle(fontSize: 14),
                         
                       ),
@@ -92,7 +99,7 @@ class _SignupState extends State<SignUp> {
                     ElevatedButton(
                       onPressed: ()
                       {
-
+                        checkIfNetworkAvailable();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
