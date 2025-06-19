@@ -20,7 +20,7 @@ class _LogInState extends State<LogIn> {
           padding: const EdgeInsets.all(10),
           child: Column(
             children: [
-              Image.asset('assets/images/final.png', height: 100),
+              Image.asset('assets/images/logo.png', height: 100),
               Text(
                 "Login as a user",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
