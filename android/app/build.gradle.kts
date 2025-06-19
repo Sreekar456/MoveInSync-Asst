@@ -3,8 +3,8 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("com.google.gms.google-services") // ✅ Properly applied in Kotlin DSL
-    id("dev.flutter.flutter-gradle-plugin") // Flutter plugin must come last
+    id("com.google.gms.google-services") // ✅ Firebase plugin
+    id("dev.flutter.flutter-gradle-plugin") // ✅ Flutter plugin last
 }
 
 android {
@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         applicationId = "com.sreekar.app"
-        minSdk = flutter.minSdkVersion
+        minSdk = 24 // ✅ use 'minSdk', not 'minSdkVersion' in Kotlin DSL
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -41,10 +41,11 @@ flutter {
 }
 
 dependencies {
+    // ✅ Add Firebase BOM and required modules
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation("com.google.firebase:firebase-analytics-ktx")
 
-    // Add more Firebase dependencies as needed:
+    // Add other Firebase services if needed:
     // implementation("com.google.firebase:firebase-auth-ktx")
     // implementation("com.google.firebase:firebase-firestore-ktx")
 }

@@ -1,6 +1,7 @@
 // android/build.gradle.kts
 
 plugins {
+    // Declare the plugin, don't use classpath manually in Kotlin DSL
     id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
