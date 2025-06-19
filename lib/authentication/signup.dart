@@ -16,9 +16,22 @@ class _SignupState extends State<SignUp> {
   CommonMethods cMethods = CommonMethods();
   checkIfNetworkAvailable() {
    cMethods.checkConnectivity(context);
-   
+   signUpFormValidation();
   }
-  
+  signUpFormValidation(){
+    if(userNameTextEditingController.text.trim().length<3){
+      cMethods.displaySnackbar("User name must be at least 3 characters", context);}
+      else if(userPhoneTextEditingController.text.trim().length<10){
+      cMethods.displaySnackbar("Phone number must be at least 10 digits", context);
+      }
+      else if(emailTextEditingController.text.contains("@") == false){
+      cMethods.displaySnackbar("Email is not valid", context);}
+      else if(passwordTextEditingController.text.trim().length<6){
+      cMethods.displaySnackbar("Password must be at least 6 characters", context);}
+      else{
+        // registerUser();
+      }
+  }
    @override
   Widget build(BuildContext context) {
     return Scaffold(
