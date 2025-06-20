@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:app/authentication/login.dart';
+import 'package:permission_handler/permission_handler.dart';
 // import 'package:app/authentication/signup.dart'; // If needed
 
 Future<void> main() async {
@@ -8,7 +9,11 @@ Future<void> main() async {
 
   // Initialize Firebase using google-services.json for Android
   await Firebase.initializeApp();
-
+  await Permission.locationWhenInUse.isDenied.then((value){
+    if (value) {
+      Permission.locationWhenInUse.request();
+    }
+  });
   runApp(const MyApp());
 }
 
