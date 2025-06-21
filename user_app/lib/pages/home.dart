@@ -1,11 +1,14 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
+import 'package:app/authentication/login.dart';
+import 'package:app/global/global_var.dart';
+import 'package:app/methods/common_methods.dart' as common_methods;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-// import 'package:permission_handler/permission_handler.dart';
-import 'package:app/global/global_var.dart'; // Make sure this contains `googlePlexInitialPosition`
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,187 +18,210 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final Completer<GoogleMapController> googleMapCompleterController =
-      Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _mapControllerCompleter = Completer();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final common_methods.CommonMethods _commonMethods = common_methods.CommonMethods();
 
-  final GlobalKey<ScaffoldState> sKey = GlobalKey<ScaffoldState>();
-
-  Position? currentPositionOfUser;
-  GoogleMapController? googleMapController;
-
-  Future<void> getCurrentLiveLocation() async {
-    Position positionOfUser = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.bestForNavigation,
-    );
-    currentPositionOfUser = positionOfUser;
-
-    LatLng userLatLng = LatLng(
-      currentPositionOfUser!.latitude,
-      currentPositionOfUser!.longitude,
-    );
-
-    CameraPosition cameraPosition = CameraPosition(
-      target: userLatLng,
-      zoom: 15,
-    );
-
-    googleMapController?.animateCamera(
-      CameraUpdate.newCameraPosition(cameraPosition),
-    );
-  }
+  GoogleMapController? _googleMapController;
+  Position? _currentPosition;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: sKey,
-      drawer: Container(
-        width: 255,
-        color: Colors.black87,
-        child: Drawer(
-          backgroundColor: Colors.white10,
-          child: ListView(
-            children: [
-              Container(
-                color: Colors.black87,
-                height: 160,
-                child: DrawerHeader(
-                  decoration: const BoxDecoration(
-                    color: Colors.black87,
-                  ),
-                  child: Row(
-                    children: [
-                      Image.asset(
-                        "assets/images/avatarman.png",
-                        height: 60,
-                        width: 60,
-                      ),
-                      const SizedBox(width: 16),
-
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(userName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.bold,
-                          ),),
-                          const SizedBox(height: 4),
-                          Text("Profile",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),)
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              )  ,
-              // header
-              // body
-              const Divider(height: 1,color: Colors.white,thickness: 1,),
-
-              const SizedBox(height: 10,),
-              ListTile(
-                leading: IconButton(onPressed: (){}, icon: const Icon(Icons.info, color: Colors.grey,)),
-                title: const Text(
-                  "About",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-                
-              ),
-              ListTile(
-                leading: IconButton(onPressed: (){}, icon: const Icon(Icons.logout, color: Colors.grey,)),
-                title: const Text(
-                  "Logout",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      key: _scaffoldKey,
+      drawer: _buildAppDrawer(),
       body: Stack(
         children: [
           GoogleMap(
             mapType: MapType.normal,
             myLocationButtonEnabled: true,
             initialCameraPosition: googlePlexInitialPosition,
-            onMapCreated: (GoogleMapController controller) {
-              googleMapController = controller;
-              updateMapTheme(controller);
-              if (!googleMapCompleterController.isCompleted) {
-                googleMapCompleterController.complete(controller);
+            onMapCreated: (controller) {
+              _googleMapController = controller;
+              _applyMapTheme(controller);
+              if (!_mapControllerCompleter.isCompleted) {
+                _mapControllerCompleter.complete(controller);
               }
-              getCurrentLiveLocation();
+              _getCurrentLocationAndValidateUser();
             },
           ),
-
-
-
           Positioned(
             top: 36,
             left: 10,
             child: GestureDetector(
-              onTap: (){
-
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 5,
-                      spreadRadius: 0.5,
-                      offset: Offset(0.7,0.7),
-                    ),
-                  ],
-                ),
-                child: const CircleAvatar(
-                  backgroundColor: Colors.grey,
-                  radius: 20,
-                  child: Icon(
-                    Icons.menu,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+              onTap: () => _scaffoldKey.currentState?.openDrawer(),
+              child: _buildMenuButton(),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  /// Loads and applies the custom map theme
-  void updateMapTheme(GoogleMapController controller) {
-    getJsonFileFromThemes("themes/dark_style.json").then(
-      (style) => setGoogleMapStyle(style, controller),
+  Drawer _buildAppDrawer() {
+    return Drawer(
+      backgroundColor: Colors.white10,
+      child: ListView(
+        children: [
+          _buildDrawerHeader(),
+          const Divider(height: 1, color: Colors.white, thickness: 1),
+          const SizedBox(height: 10),
+          _buildDrawerItem(icon: Icons.info, label: "About", onTap: () {}),
+          _buildDrawerItem(icon: Icons.logout, label: "Logout", onTap: () {
+            FirebaseAuth.instance.signOut();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LogIn()),
+            );
+          }),
+        ],
+      ),
     );
   }
 
-  /// Loads the map style JSON file from the assets
-  Future<String> getJsonFileFromThemes(String mapStylePath) async {
-    ByteData byteData = await rootBundle.load(mapStylePath);
-    final list = byteData.buffer.asUint8List(
-      byteData.offsetInBytes,
-      byteData.lengthInBytes,
+  Widget _buildDrawerHeader() {
+    return Container(
+      color: Colors.black87,
+      height: 160,
+      child: DrawerHeader(
+        decoration: const BoxDecoration(color: Colors.black87),
+        child: Row(
+          children: [
+            Image.asset(
+              "assets/images/avatarman.png",
+              height: 60,
+              width: 60,
+            ),
+            const SizedBox(width: 16),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Profile",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              ],
+            ),
+          ],
+        ),
+      ),
     );
-    return utf8.decode(list);
   }
 
-  /// Applies the map style to the GoogleMapController
-  void setGoogleMapStyle(String googleMapStyle, GoogleMapController controller) {
-    controller.setMapStyle(googleMapStyle);
+  ListTile _buildDrawerItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.grey),
+      title: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildMenuButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 5,
+            spreadRadius: 0.5,
+            offset: Offset(0.7, 0.7),
+          ),
+        ],
+      ),
+      child: const CircleAvatar(
+        backgroundColor: Colors.grey,
+        radius: 20,
+        child: Icon(Icons.menu, color: Colors.black87),
+      ),
+    );
+  }
+
+  Future<void> _getCurrentLocationAndValidateUser() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation,
+      );
+      _currentPosition = position;
+
+      final userLatLng = LatLng(position.latitude, position.longitude);
+      final cameraPosition = CameraPosition(target: userLatLng, zoom: 15);
+
+      _googleMapController?.animateCamera(
+        CameraUpdate.newCameraPosition(cameraPosition),
+      );
+
+      await _validateUserStatus();
+    } catch (e) {
+      _commonMethods.displaySnackbar("Failed to get location: $e", context);
+    }
+  }
+
+  Future<void> _validateUserStatus() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      _redirectToLogin("No user ID found.");
+      return;
+    }
+
+    final userRef = FirebaseDatabase.instance.ref().child("users").child(userId);
+
+    try {
+      final snapshot = await userRef.once();
+
+      if (!snapshot.snapshot.exists) {
+        _redirectToLogin("User does not exist");
+        return;
+      }
+
+      final data = snapshot.snapshot.value as Map?;
+      if (data == null || data['blockStatus'] != "no") {
+        _redirectToLogin("User is blocked");
+        return;
+      }
+
+      userName = data['name'] ?? '';
+    } catch (e) {
+      _redirectToLogin("Error retrieving user: $e");
+    }
+  }
+
+  void _redirectToLogin(String message) {
+    FirebaseAuth.instance.signOut();
+    Navigator.pop(context);
+    _commonMethods.displaySnackbar(message, context);
+  }
+
+  void _applyMapTheme(GoogleMapController controller) {
+    _loadMapStyle("themes/dark_style.json").then(
+      (style) => controller.setMapStyle(style),
+    );
+  }
+
+  Future<String> _loadMapStyle(String path) async {
+    final byteData = await rootBundle.load(path);
+    return utf8.decode(byteData.buffer.asUint8List());
   }
 }
