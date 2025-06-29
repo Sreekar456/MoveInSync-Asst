@@ -6,7 +6,7 @@ This repository implements a complete ride-sharing platform using **Flutter** an
 - 🚕 **Driver App** – For drivers to receive and manage ride requests  
 - 🛠️ **Admin Panel** – For platform management, including blocking/unblocking users or drivers  
 
-🔗 **Working Demo**: [Watch the Video](https://drive.google.com/file/d/1jfOyJmFnZcU34DYhPLzQNFitu-JHJ6ZA/view?usp=drive_link)
+
 
 ⚠️ **Important Note**:  
 To run the application, you **must provide valid Google Maps and Directions API keys**, which are **not free** under Google's current pricing. These APIs are essential for live location tracking and path rendering.
